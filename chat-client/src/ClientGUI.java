@@ -1,3 +1,4 @@
+import common.Library;
 import network.SocketThread;
 import network.SocketThreadListener;
 
@@ -11,7 +12,7 @@ import java.net.Socket;
 
 public class ClientGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler, SocketThreadListener {
 
-    private static final int WIDTH = 400;
+    private static final int WIDTH = 600;
     private static final int HEIGHT = 300;
 
     private final JTextArea log = new JTextArea();
@@ -38,6 +39,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         setLocationRelativeTo(null);
         setSize(WIDTH, HEIGHT);
         log.setEditable(false);
+        log.setLineWrap(true);
         JScrollPane scrollLog = new JScrollPane(log);
         JScrollPane scrollUser = new JScrollPane(userList);
         String[] users = {"user1", "user2", "user3", "user4", "user5",
@@ -48,7 +50,8 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         btnSend.addActionListener(this);
         tfMessage.addActionListener(this);
         btnLogin.addActionListener(this);
-
+        btnDisconnect.addActionListener(this);
+        panelBottom.setVisible(false);
 
         panelTop.add(tfIPAddress);
         panelTop.add(tfPort);
@@ -93,8 +96,10 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
             setAlwaysOnTop(cbAlwaysOnTop.isSelected());
         } else if (src == btnSend || src == tfMessage) {
             sendMessage();
-        } else if (src == btnLogin){
+        } else if (src == btnLogin) {
             connect();
+        } else if (src == btnDisconnect) {
+            socketThread.close();
         } else {
             throw new RuntimeException("Unknown source: " + src);
         }
@@ -164,12 +169,18 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
 
     @Override
     public void onSocketStop(SocketThread thread) {
-        putLog("Stop");
+        panelBottom.setVisible(false);
+        panelTop.setVisible(true);
     }
 
     @Override
     public void onSocketReady(SocketThread thread, Socket socket) {
-        putLog("Ready");
+        panelBottom.setVisible(true);
+        panelTop.setVisible(false);
+        String login = tfLogin.getText();
+        String password = new String(tfPassword.getPassword());
+        thread.sendMessage(Library.getAuthRequest(login, password));
+
     }
 
     @Override
@@ -179,6 +190,6 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
 
     @Override
     public void onSocketException(SocketThread thread, Exception exception) {
-        showException(thread, exception);
+        // showException(thread, exception);
     }
 }

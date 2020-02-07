@@ -1,5 +1,4 @@
 package network;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -30,7 +29,7 @@ public class ServerSocketThread extends Thread {
                 try {
                     socket = server.accept();
                 } catch (SocketTimeoutException e) {
-                    listener.onServerException(this, e);
+                    listener.onServerTimeout(this, server);
                     continue;
                 }
                 listener.onSocketAccepted(this, server, socket);
