@@ -185,7 +185,9 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
 
     @Override
     public void onReceiveString(SocketThread thread, Socket socket, String msg) {
-        putLog(msg);
+        String[] str = msg.split("[±]+");
+        if(str.length == 1) putLog("Invalid login or password");
+        else putLog(str[str.length - 1]);
     }
 
     @Override
