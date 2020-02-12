@@ -10,8 +10,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-//import java.util.Timer;
-//import java.util.TimerTask;
 import java.util.Vector;
 
 public class ChatServer implements ServerSocketThreadListener, SocketThreadListener {
@@ -140,7 +138,6 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         String nickname = SqlClient.getNickname(login, password);
         if (nickname == null) {
             putLog("Invalid login attempt: " + login);
-//            timeoutAuth(client);
             client.authFail();
             return;
         } else {
@@ -203,17 +200,5 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         return null;
     }
 
-/*    private void timeoutAuth(ClientThread client){
-        TimerTask timeoutClose = new TimerTask() {
-            @Override
-            public void run() {
-                client.authFail();
-                clients.remove(client);
-                putLog("Client is timed out");
-            }
-        };
-        Timer time = new Timer();
-        time.schedule(timeoutClose, 120000);
-    }*/
 
 }
