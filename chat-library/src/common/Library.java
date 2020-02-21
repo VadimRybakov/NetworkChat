@@ -12,7 +12,9 @@ public class Library {
     public static final String AUTH_REQUEST = "/auth_request";
     public static final String AUTH_ACCEPT = "/auth_accept";
     public static final String AUTH_DENIED = "/auth_denied";
+    public static final String SIGN_UP_DENIED = "/sign_up_denied";
     public static final String MSG_FORMAT_ERROR = "/msg_format_error";
+    public static final String SIGN_UP_REQUEST = "/sign_up_request";
     // если мы вдруг не поняли, что за сообщение и не смогли разобрать
     public static final String TYPE_BROADCAST = "/bcast";
     // то есть сообщение, которое будет посылаться всем
@@ -39,6 +41,10 @@ public class Library {
         return AUTH_DENIED;
     }
 
+    public static String getSignUpDenied() {
+        return SIGN_UP_DENIED;
+    }
+
     public static String getMsgFormatError(String message) {
         return MSG_FORMAT_ERROR + DELIMITER + message;
     }
@@ -46,6 +52,10 @@ public class Library {
     public static String getTypeBroadcast(String src, String message) {
         return TYPE_BROADCAST + DELIMITER + System.currentTimeMillis() +
                 DELIMITER + src + DELIMITER + message;
+    }
+
+    public static String getSignUpRequest(String login, String nickname, String password) {
+        return SIGN_UP_REQUEST + DELIMITER + login + DELIMITER + nickname + DELIMITER + password;
     }
 
 }

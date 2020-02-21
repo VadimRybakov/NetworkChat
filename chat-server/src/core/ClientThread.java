@@ -47,4 +47,9 @@ public class ClientThread extends SocketThread {
         sendMessage(Library.getMsgFormatError(msg));
         close();
     }
+
+    void signUpFail() {
+        sendMessage(Library.getAuthDenied());
+        close();
+    }
 }

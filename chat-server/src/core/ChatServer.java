@@ -129,29 +129,65 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
 
     private void handleNonAuthMessage(ClientThread client, String msg) {
         String[] arr = msg.split(Library.DELIMITER);
-        if (arr.length != 3 || !arr[0].equals(Library.AUTH_REQUEST)) {
-            client.msgFormatError(msg);
-            return;
-        }
-        String login = arr[1];
-        String password = arr[2];
-        String nickname = SqlClient.getNickname(login, password);
-        if (nickname == null) {
-            putLog("Invalid login attempt: " + login);
-            client.authFail();
-            return;
-        } else {
-            ClientThread oldClient = findClientByNickname(nickname);
-            client.authAccept(nickname);
-            if (oldClient == null) {
-                sendToAuthClients(Library.getTypeBroadcast("Server", nickname + " connected"));
-            } else {
-                oldClient.reconnect();
-                clients.remove(oldClient);
+        if(arr.length == 4 && arr[0].equals(Library.SIGN_UP_REQUEST)){
+            String login = arr[1];
+            if(login == null) {
+                putLog("Empty login ");
+                client.signUpFail();
+                return;
             }
-
+            String nickname = arr[2];
+            if(nickname == null) {
+                putLog("Empty nickname ");
+                client.signUpFail();
+                return;
+            }
+            String password = arr[3];
+            if(password == null) {
+                putLog("Empty password ");
+                client.signUpFail();
+                return;
+            }
+            if(SqlClient.containsLogin(login)) {
+                putLog("This login is already exist: " + login);
+                client.authFail();
+                return;
+            }
+            if(SqlClient.containsNickname(nickname)) {
+                putLog("This nickname is already exist: " + nickname);
+                client.authFail();
+                return;
+            }
+            if(SqlClient.insertNewUser(login, password, nickname) == 0) {
+                putLog("error while sign up, try again");
+                client.signUpFail();
+            } else {
+                client.authAccept(nickname);
+                sendToAuthClients(Library.getTypeBroadcast("Server", nickname + " connected"));
+                sendToAuthClients(Library.getUserList(getUsers()));
+            }
         }
-        sendToAuthClients(Library.getUserList(getUsers()));
+        else if (arr.length == 3 && arr[0].equals(Library.AUTH_REQUEST)) {
+            String login = arr[1];
+            String password = arr[2];
+            String nickname = SqlClient.getNickname(login, password);
+            if (nickname == null) {
+                putLog("Invalid login attempt: " + login);
+                client.authFail();
+                return;
+            } else {
+                ClientThread oldClient = findClientByNickname(nickname);
+                client.authAccept(nickname);
+                if (oldClient == null) {
+                    sendToAuthClients(Library.getTypeBroadcast("Server", nickname + " connected"));
+                } else {
+                    oldClient.reconnect();
+                    clients.remove(oldClient);
+                }
+
+            }
+            sendToAuthClients(Library.getUserList(getUsers()));
+        } else client.msgFormatError(msg);
     }
 
     private void handleAuthMessage(ClientThread client, String msg) {
