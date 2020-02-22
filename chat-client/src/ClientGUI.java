@@ -19,18 +19,25 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     private static final int HEIGHT = 300;
 
     private final JTextArea log = new JTextArea();
-    private final JPanel panelTop = new JPanel(new GridLayout(2, 3));
-    private final JTextField tfIPAddress = new JTextField("95.84.209.91");
+    private final JPanel panelTop = new JPanel(new GridLayout(2, 4));
+    private final JTextField tfIPAddress = new JTextField("192.168.1.42");
     private final JTextField tfPort = new JTextField("8189");
     private final JCheckBox cbAlwaysOnTop = new JCheckBox("Always on top");
-    private final JTextField tfLogin = new JTextField("ivan");
-    private final JPasswordField tfPassword = new JPasswordField("123");
+    private final JTextField tfLogin = new JTextField();
+    private final JPasswordField tfPassword = new JPasswordField();
     private final JButton btnLogin = new JButton("Login");
+    private final JButton btnSignUp = new JButton("SignUp");
 
     private final JPanel panelBottom = new JPanel(new BorderLayout());
     private final JButton btnDisconnect = new JButton("<html><b>Disconnect</b></html>");
     private final JTextField tfMessage = new JTextField();
     private final JButton btnSend = new JButton("Send");
+
+    private final JPanel signUpPanel = new JPanel(new GridLayout(2,2));
+    private final JTextField tfSignUpLogin = new JTextField();
+    private final JTextField tfSignUpNickname = new JTextField();
+    private final JPasswordField tfSignUpPassword = new JPasswordField();
+    private boolean isSignedUp = false;
 
     private final JList<String> userList = new JList<>();
     private boolean shownIoErrors = false;
@@ -53,18 +60,28 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         btnSend.addActionListener(this);
         tfMessage.addActionListener(this);
         btnLogin.addActionListener(this);
+        btnSignUp.addActionListener(this);
         btnDisconnect.addActionListener(this);
         panelBottom.setVisible(false);
 
         panelTop.add(tfIPAddress);
         panelTop.add(tfPort);
+        panelTop.add(btnSignUp);
         panelTop.add(cbAlwaysOnTop);
         panelTop.add(tfLogin);
         panelTop.add(tfPassword);
         panelTop.add(btnLogin);
+
         panelBottom.add(btnDisconnect, BorderLayout.WEST);
         panelBottom.add(tfMessage, BorderLayout.CENTER);
         panelBottom.add(btnSend, BorderLayout.EAST);
+
+        signUpPanel.add(new JLabel("login", SwingConstants.LEFT));
+        signUpPanel.add(new JLabel("nickname", SwingConstants.LEFT));
+        signUpPanel.add(new JLabel("password", SwingConstants.LEFT));
+        signUpPanel.add(tfSignUpLogin);
+        signUpPanel.add(tfSignUpNickname);
+        signUpPanel.add(tfSignUpPassword);
 
         add(scrollLog, BorderLayout.CENTER);
         add(scrollUser, BorderLayout.EAST);
@@ -101,11 +118,20 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
             sendMessage();
         } else if (src == btnLogin) {
             connect();
+        } else if (src == btnSignUp) {
+            signUp();
         } else if (src == btnDisconnect) {
             socketThread.close();
         } else {
             throw new RuntimeException("Unknown source: " + src);
         }
+    }
+
+    private void signUp(){
+        JOptionPane.showConfirmDialog(
+            this, signUpPanel, "signUp", JOptionPane.OK_CANCEL_OPTION);
+        isSignedUp = true;
+        connect();
     }
 
     private void sendMessage() {
@@ -182,9 +208,17 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     public void onSocketReady(SocketThread thread, Socket socket) {
         panelBottom.setVisible(true);
         panelTop.setVisible(false);
-        String login = tfLogin.getText();
-        String password = new String(tfPassword.getPassword());
-        thread.sendMessage(Library.getAuthRequest(login, password));
+        if(!isSignedUp) {
+            String login = tfLogin.getText();
+            String password = new String(tfPassword.getPassword());
+            thread.sendMessage(Library.getAuthRequest(login, password));
+        } else {
+            String signUpLogin = tfSignUpLogin.getText();
+            String signUpNickname = tfSignUpNickname.getText();
+            String signUpPassword = new String(tfSignUpPassword.getPassword());
+            thread.sendMessage(Library.getSignUpRequest(signUpLogin, signUpNickname, signUpPassword));
+            isSignedUp = false;
+        }
 
     }
 
@@ -202,6 +236,9 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         String[] arr = msg.split(Library.DELIMITER);
         String msgType = arr[0];
         switch (msgType) {
+            case Library.SIGN_UP_DENIED:
+                putLog(msg);
+                break;
             case Library.AUTH_ACCEPT:
                 setTitle(WINDOW_TITLE + " entered with nickname: " + arr[1]);
                 break;
