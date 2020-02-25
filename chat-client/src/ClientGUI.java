@@ -8,11 +8,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.net.Socket;
-import java.nio.channels.FileChannel;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
+import java.util.*;
 
 public class ClientGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler, SocketThreadListener {
 
@@ -142,7 +142,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         tfMessage.setText(null);
         tfMessage.requestFocusInWindow();
         socketThread.sendMessage(Library.getTypeBcastClient(msg));
-//        wrtMsgToLogFile(msg, username);
+        wrtMsgToLogFile(msg, username);
     }
 
     private void wrtMsgToLogFile(String msg, String username) {
@@ -150,6 +150,35 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
             out.write(username + ": " + msg + "\n");
             out.flush();
         } catch (IOException e) {
+            if (!shownIoErrors) {
+                shownIoErrors = true;
+                showException(Thread.currentThread(), e);
+            }
+        }
+    }
+
+    private void loadHistory(){
+        try (RandomAccessFile randomAccessFile = new RandomAccessFile("log.txt", "r")){
+            //если лог файл в несколько Гб, то быстрее будет читать его ближе к 100 последним строкам
+            // 100 * 1024 - должно хватить на 100 строк
+            int numberOfLastLength = 100;
+            if(randomAccessFile.length() > numberOfLastLength * 1024)
+                randomAccessFile.seek(randomAccessFile.length() - numberOfLastLength * 1024);
+            else
+                randomAccessFile.seek(0);
+            ArrayList<String> arr = new ArrayList<>();
+            String line;
+            do {
+                line = randomAccessFile.readLine();
+                arr.add(line);
+            }
+            while(line != null);
+            int temp = arr.size() - 1;
+            if(numberOfLastLength > temp) numberOfLastLength = temp;
+            for (int i = temp - numberOfLastLength; i  < temp; i++) {
+                putLog(arr.get(i));
+            }
+        } catch (IOException | NullPointerException e) {
             if (!shownIoErrors) {
                 shownIoErrors = true;
                 showException(Thread.currentThread(), e);
@@ -224,6 +253,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
             tfLogin = tfSignUpLogin;
             tfPassword = tfSignUpPassword;
         }
+        loadHistory();
 
     }
 
@@ -234,7 +264,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
 
     @Override
     public void onSocketException(SocketThread thread, Exception exception) {
-        // showException(thread, exception);
+//         showException(thread, exception);
     }
 
     private void handleMessage(String msg) {
