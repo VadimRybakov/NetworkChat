@@ -136,13 +136,20 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     }
 
     private void sendMessage() {
-        String msg = tfMessage.getText();
-        String username = tfLogin.getText();
-        if ("".equals(msg)) return;
-        tfMessage.setText(null);
-        tfMessage.requestFocusInWindow();
-        socketThread.sendMessage(Library.getTypeBcastClient(msg));
-        wrtMsgToLogFile(msg, username);
+        try {
+            String msg = tfMessage.getText();
+            String username = tfLogin.getText();
+            if ("".equals(msg)) return;
+            tfMessage.setText(null);
+            tfMessage.requestFocusInWindow();
+            socketThread.sendMessage(Library.getTypeBcastClient(msg));
+            wrtMsgToLogFile(msg, username);
+        } catch (IOException e) {
+            if (!shownIoErrors) {
+                shownIoErrors = true;
+                showException(Thread.currentThread(), e);
+            }
+        }
     }
 
     private void wrtMsgToLogFile(String msg, String username) {

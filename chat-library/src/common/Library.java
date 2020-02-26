@@ -1,4 +1,8 @@
 package common;
+
+import java.io.*;
+import java.util.HashSet;
+
 public class Library {
     /*
     /auth_request±login±password
@@ -21,8 +25,8 @@ public class Library {
     public static final String TYPE_BCAST_CLIENT = "/client_msg";
     public static final String USER_LIST = "/user_list";
 
-    public static String getTypeBcastClient(String msg) {
-        return TYPE_BCAST_CLIENT + DELIMITER + msg;
+    public static String getTypeBcastClient(String msg) throws IOException {
+        return TYPE_BCAST_CLIENT + DELIMITER + censorshipCheck(msg);
     }
 
     public static String getUserList(String users) {
@@ -58,4 +62,18 @@ public class Library {
         return SIGN_UP_REQUEST + DELIMITER + login + DELIMITER + nickname + DELIMITER + password;
     }
 
+    public static String censorshipCheck(String msg) throws IOException {
+        BufferedReader bufferedReader = new BufferedReader(new FileReader("censored.txt"));
+        HashSet<String> censoredSet = new HashSet<>();
+        String line;
+        while ((line = bufferedReader.readLine()) != null) {
+            censoredSet.add(line);
+        }
+        bufferedReader.close();
+        msg = msg.toLowerCase();
+        for (String s : censoredSet) {
+            msg = msg.replace(s, "[censored]");
+        }
+        return msg;
+    }
 }
