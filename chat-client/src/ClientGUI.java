@@ -8,10 +8,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
+import java.util.*;
 
 public class ClientGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler, SocketThreadListener {
 
@@ -23,8 +24,8 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     private final JTextField tfIPAddress = new JTextField("192.168.1.42");
     private final JTextField tfPort = new JTextField("8189");
     private final JCheckBox cbAlwaysOnTop = new JCheckBox("Always on top");
-    private final JTextField tfLogin = new JTextField();
-    private final JPasswordField tfPassword = new JPasswordField();
+    private JTextField tfLogin = new JTextField();
+    private JPasswordField tfPassword = new JPasswordField();
     private final JButton btnLogin = new JButton("Login");
     private final JButton btnSignUp = new JButton("SignUp");
 
@@ -135,13 +136,20 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     }
 
     private void sendMessage() {
-        String msg = tfMessage.getText();
-        String username = tfLogin.getText();
-        if ("".equals(msg)) return;
-        tfMessage.setText(null);
-        tfMessage.requestFocusInWindow();
-        socketThread.sendMessage(Library.getTypeBcastClient(msg));
-        //wrtMsgToLogFile(msg, username);
+        try {
+            String msg = tfMessage.getText();
+            String username = tfLogin.getText();
+            if ("".equals(msg)) return;
+            tfMessage.setText(null);
+            tfMessage.requestFocusInWindow();
+            socketThread.sendMessage(Library.getTypeBcastClient(msg));
+            wrtMsgToLogFile(msg, username);
+        } catch (IOException e) {
+            if (!shownIoErrors) {
+                shownIoErrors = true;
+                showException(Thread.currentThread(), e);
+            }
+        }
     }
 
     private void wrtMsgToLogFile(String msg, String username) {
@@ -149,6 +157,35 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
             out.write(username + ": " + msg + "\n");
             out.flush();
         } catch (IOException e) {
+            if (!shownIoErrors) {
+                shownIoErrors = true;
+                showException(Thread.currentThread(), e);
+            }
+        }
+    }
+
+    private void loadHistory(){
+        try (RandomAccessFile randomAccessFile = new RandomAccessFile("log.txt", "r")){
+            //если лог файл в несколько Гб, то быстрее будет читать его ближе к 100 последним строкам
+            // 100 * 1024 - должно хватить на 100 строк
+            int numberOfLastLength = 100;
+            if(randomAccessFile.length() > numberOfLastLength * 1024)
+                randomAccessFile.seek(randomAccessFile.length() - numberOfLastLength * 1024);
+            else
+                randomAccessFile.seek(0);
+            ArrayList<String> arr = new ArrayList<>();
+            String line;
+            do {
+                line = randomAccessFile.readLine();
+                arr.add(line);
+            }
+            while(line != null);
+            int temp = arr.size() - 1;
+            if(numberOfLastLength > temp) numberOfLastLength = temp;
+            for (int i = temp - numberOfLastLength; i  < temp; i++) {
+                putLog(arr.get(i));
+            }
+        } catch (IOException | NullPointerException e) {
             if (!shownIoErrors) {
                 shownIoErrors = true;
                 showException(Thread.currentThread(), e);
@@ -213,12 +250,17 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
             String password = new String(tfPassword.getPassword());
             thread.sendMessage(Library.getAuthRequest(login, password));
         } else {
+            tfLogin.setText(null);
+            tfPassword.setText(null);
             String signUpLogin = tfSignUpLogin.getText();
             String signUpNickname = tfSignUpNickname.getText();
             String signUpPassword = new String(tfSignUpPassword.getPassword());
             thread.sendMessage(Library.getSignUpRequest(signUpLogin, signUpNickname, signUpPassword));
             isSignedUp = false;
+            tfLogin = tfSignUpLogin;
+            tfPassword = tfSignUpPassword;
         }
+        loadHistory();
 
     }
 
@@ -229,7 +271,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
 
     @Override
     public void onSocketException(SocketThread thread, Exception exception) {
-        // showException(thread, exception);
+//         showException(thread, exception);
     }
 
     private void handleMessage(String msg) {
@@ -237,13 +279,11 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         String msgType = arr[0];
         switch (msgType) {
             case Library.SIGN_UP_DENIED:
+            case Library.AUTH_DENIED:
                 putLog(msg);
                 break;
             case Library.AUTH_ACCEPT:
                 setTitle(WINDOW_TITLE + " entered with nickname: " + arr[1]);
-                break;
-            case Library.AUTH_DENIED:
-                putLog(msg);
                 break;
             case Library.MSG_FORMAT_ERROR:
                 putLog(msg);

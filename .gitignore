@@ -1,4 +1,6 @@
-.iml
+*.iml
 .idea
 /out/
 /chat-client/src/META-INF/
+log.txt
+censored.txt
