@@ -3,19 +3,22 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ServerSocketThread extends Thread {
 
     private int port;
     private int timeout;
     ServerSocketThreadListener listener;
+    private ExecutorService executorService = Executors.newCachedThreadPool();
 
     public ServerSocketThread(ServerSocketThreadListener listener, String name, int port, int timeout) {
         super(name);
         this.port = port;
         this.timeout = timeout;
         this.listener = listener;
-        start();
+        executorService.execute(this);
     }
 
     @Override
