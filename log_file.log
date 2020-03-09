@@ -1,0 +1,14 @@
+2020-03-09 10:09:21 INFO  ChatServer:216 - vadimio раз два три
+2020-03-09 10:09:25 DEBUG ChatServer:90 - Client with ip: /192.168.1.42 port: 64973 connected
+2020-03-09 10:09:25 DEBUG ChatServer:110 - Socket created
+2020-03-09 10:10:19 DEBUG ChatServer:60 - Server thread started
+2020-03-09 10:10:19 DEBUG ChatServer:78 - Server socket created
+2020-03-09 10:10:24 DEBUG ChatServer:90 - Client with ip: /192.168.1.42 port: 64992 connected
+2020-03-09 10:10:24 DEBUG ChatServer:110 - Socket created
+2020-03-09 10:10:55 DEBUG ChatServer:90 - Client with ip: /192.168.1.42 port: 65001 connected
+2020-03-09 10:10:55 DEBUG ChatServer:110 - Socket created
+2020-03-09 10:11:37 DEBUG ChatServer:60 - Server thread started
+2020-03-09 10:11:38 DEBUG ChatServer:78 - Server socket created
+2020-03-09 10:11:46 DEBUG ChatServer:90 - Client with ip: /192.168.1.42 port: 65023 connected
+2020-03-09 10:11:46 DEBUG ChatServer:110 - Socket created
+2020-03-09 10:11:49 INFO  ChatServer:216 - vadimio jjff
