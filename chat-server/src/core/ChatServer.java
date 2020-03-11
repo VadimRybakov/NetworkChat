@@ -11,6 +11,7 @@ import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Vector;
+import org.apache.log4j.Logger;
 
 public class ChatServer implements ServerSocketThreadListener, SocketThreadListener {
 
@@ -18,14 +19,17 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     private ServerSocketThread server;
     private final DateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss: ");
     private Vector<SocketThread> clients = new Vector<>();
+    private static final Logger log = Logger.getLogger(ChatServer.class);
 
     public ChatServer(ChatServerListener listener) {
         this.listener = listener;
     }
 
     public void start(int port) {
-        if (server != null && server.isAlive())
+        if (server != null && server.isAlive()) {
             putLog("Server already started");
+            log.debug("Server already started");
+        }
         else
             server = new ServerSocketThread(this, "Server", port, 2000);
     }
@@ -33,6 +37,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     public void stop() {
         if (server == null || !server.isAlive()) {
             putLog("Server is not running");
+            log.debug("Server is not running");
         } else {
             server.interrupt();
         }
@@ -52,12 +57,14 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public void onServerStart(ServerSocketThread thread) {
         putLog("Server thread started");
+        log.debug("Server thread started");
         SqlClient.connect();
     }
 
     @Override
     public void onServerStop(ServerSocketThread thread) {
         putLog("Server thread stopped");
+        log.debug("Server thread stopped");
         SqlClient.disconnect();
         for (int i = 0; i < clients.size(); i++) {
             clients.get(i).close();
@@ -68,7 +75,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public void onServerSocketCreated(ServerSocketThread thread, ServerSocket server) {
         putLog("Server socket created");
-
+        log.debug("Server socket created");
     }
 
     @Override
@@ -80,6 +87,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public void onSocketAccepted(ServerSocketThread thread, ServerSocket server, Socket socket) {
         putLog("Client connected");
+        log.trace("Client with ip: " + socket.getInetAddress() + " port: " + socket.getPort() + " connected");
         String name = "SocketThread " + socket.getInetAddress() + ":" + socket.getPort();
         new ClientThread(this, name, socket);
 
@@ -87,6 +95,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
 
     @Override
     public void onServerException(ServerSocketThread thread, Throwable exception) {
+        log.error("exception " + exception);
         exception.printStackTrace();
     }
 
@@ -98,7 +107,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public synchronized void onSocketStart(SocketThread thread, Socket socket) {
         putLog("Socket created");
-
+        log.debug("Socket created");
     }
 
     @Override
@@ -133,33 +142,39 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
             String login = arr[1];
             if(login == null) {
                 putLog("Empty login ");
+                log.warn("Empty login ");
                 client.signUpFail();
                 return;
             }
             String nickname = arr[2];
             if(nickname == null) {
                 putLog("Empty nickname ");
+                log.warn("Empty nickname ");
                 client.signUpFail();
                 return;
             }
             String password = arr[3];
             if(password == null) {
                 putLog("Empty password ");
+                log.warn("Empty password ");
                 client.signUpFail();
                 return;
             }
             if(SqlClient.containsLogin(login)) {
                 putLog("This login is already exist: " + login);
+                log.warn("This login is already exist: "+ login);
                 client.authFail();
                 return;
             }
             if(SqlClient.containsNickname(nickname)) {
                 putLog("This nickname is already exist: " + nickname);
+                log.warn("This nickname is already exist: "+ nickname);
                 client.authFail();
                 return;
             }
             if(SqlClient.insertNewUser(login, password, nickname) == 0) {
                 putLog("error while sign up, try again");
+                log.warn("error while sign up, try again");
                 client.signUpFail();
             } else {
                 client.authAccept(nickname);
@@ -173,6 +188,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
             String nickname = SqlClient.getNickname(login, password);
             if (nickname == null) {
                 putLog("Invalid login attempt: " + login);
+                log.warn("Invalid login attempt: " + login);
                 client.authFail();
                 return;
             } else {
@@ -197,12 +213,12 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
             case Library.TYPE_BCAST_CLIENT:
                 sendToAuthClients(Library.getTypeBroadcast(
                         client.getNickname(), arr[1]));
+                log.info(client.getNickname() + " " + arr[1]);
                 break;
             default:
                 client.sendMessage(Library.getMsgFormatError(msg));
         }
     }
-    // launch4j
     private void sendToAuthClients(String msg) {
         for (int i = 0; i < clients.size(); i++) {
             ClientThread client = (ClientThread) clients.get(i);
