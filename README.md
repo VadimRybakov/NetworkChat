@@ -1,2 +1,2 @@
 # NetworkChat
-homework
+Desktop application on Java 11
