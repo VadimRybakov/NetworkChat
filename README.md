@@ -1,2 +1,4 @@
 # NetworkChat
-Desktop application on Java 11
+Used technologies:
+  - swing application framework
+
